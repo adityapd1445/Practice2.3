@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive SVG Drawing Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            cursor: crosshair;
+        }
+        #drawing-area {
+            border: 2px solid #e5e7eb;
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            touch-action: none; /* Prevents default touch actions like scrolling/zooming */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-4xl transition-all duration-300 hover:shadow-xl">
+        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Creative Drawing Canvas</h1>
+
+        <!-- Controls for the drawing tool -->
+        <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
+            <div class="flex items-center space-x-2">
+                <label for="color-picker" class="font-medium text-gray-700">Pen Color:</label>
+                <input type="color" id="color-picker" value="#3b82f6" class="rounded-lg border-2 border-gray-300">
+            </div>
+            <button id="clear-button" class="px-4 py-2 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200">
+                Clear Canvas
+            </button>
+        </div>
+
+        <!-- SVG Drawing Area -->
+        <div class="flex items-center justify-center overflow-hidden">
+            <svg id="drawing-area" class="w-full h-[60vh]" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                <!-- SVG elements will be drawn here -->
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const svg = document.getElementById('drawing-area');
+            const colorPicker = document.getElementById('color-picker');
+            const clearButton = document.getElementById('clear-button');
+
+            let isDrawing = false;
+            let currentPath;
+            let startPoint;
+
+            // Get SVG coordinates from mouse/touch event
+            const getSvgCoordinates = (event) => {
+                const svgRect = svg.getBoundingClientRect();
+                const clientX = event.clientX || event.touches[0].clientX;
+                const clientY = event.clientY || event.touches[0].clientY;
+                return {
+                    x: (clientX - svgRect.left) / svgRect.width * 800,
+                    y: (clientY - svgRect.top) / svgRect.height * 600
+                };
+            };
+
+            // Start drawing
+            const startDrawing = (event) => {
+                isDrawing = true;
+                const point = getSvgCoordinates(event);
+                startPoint = point;
+
+                currentPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                currentPath.setAttribute('fill', 'none');
+                currentPath.setAttribute('stroke', colorPicker.value);
+                currentPath.setAttribute('stroke-width', '4');
+                currentPath.setAttribute('stroke-linecap', 'round');
+                currentPath.setAttribute('stroke-linejoin', 'round');
+                currentPath.setAttribute('d', `M${point.x},${point.y}`);
+                
+                svg.appendChild(currentPath);
+            };
+
+            // Continue drawing
+            const draw = (event) => {
+                if (!isDrawing) return;
+                const point = getSvgCoordinates(event);
+                const d = currentPath.getAttribute('d');
+                currentPath.setAttribute('d', `${d} L${point.x},${point.y}`);
+            };
+
+            // Stop drawing
+            const stopDrawing = () => {
+                isDrawing = false;
+            };
+
+            // Mouse event listeners
+            svg.addEventListener('mousedown', startDrawing);
+            svg.addEventListener('mousemove', draw);
+            svg.addEventListener('mouseup', stopDrawing);
+            svg.addEventListener('mouseleave', stopDrawing);
+
+            // Touch event listeners for mobile support
+            svg.addEventListener('touchstart', (event) => {
+                event.preventDefault(); // Prevents page scroll
+                startDrawing(event);
+            }, { passive: false });
+            svg.addEventListener('touchmove', (event) => {
+                event.preventDefault(); // Prevents page scroll
+                draw(event);
+            }, { passive: false });
+            svg.addEventListener('touchend', stopDrawing);
+
+            // Clear button functionality
+            clearButton.addEventListener('click', () => {
+                svg.innerHTML = ''; // Clears all drawn elements
+            });
+        });
+    </script>
+</body>
+</html>
